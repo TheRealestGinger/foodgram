@@ -1,4 +1,4 @@
-![Workflow](https://github.com/TheRealestGinger/foodgram/actions/workflows/main.yml/badge.svg?event=push)
+![Foodgram Workflow](https://github.com/TheRealestGinger/foodgram/actions/workflows/main.yml/badge.svg?event=push)
 # Foodgram
 
 ## Описание
