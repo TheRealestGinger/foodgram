@@ -1,22 +1,17 @@
 from django.conf import settings
 from django.utils.module_loading import import_string
-from rest_framework.serializers import (
-    ModelSerializer,
-    ReadOnlyField,
-    SerializerMethodField,
-    PrimaryKeyRelatedField,
-    IntegerField,
-    Serializer
-)
 from rest_framework.exceptions import ValidationError
+from rest_framework.serializers import (
+    IntegerField,
+    ModelSerializer,
+    PrimaryKeyRelatedField,
+    ReadOnlyField,
+    Serializer,
+    SerializerMethodField,
+)
 
 from core.utils import Base64ImageField
-from .models import (
-    Ingredient,
-    Recipe,
-    Tag,
-    IngredientInRecipe
-)
+from .models import Ingredient, IngredientInRecipe, Recipe, Tag
 
 
 class TagSerializer(ModelSerializer):

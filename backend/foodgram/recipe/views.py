@@ -1,36 +1,35 @@
 import hashlib
 
 from django.http import HttpResponse
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.viewsets import ReadOnlyModelViewSet, ModelViewSet
 from rest_framework.permissions import (
     IsAuthenticated,
     IsAuthenticatedOrReadOnly
 )
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status
-
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from core.utils import LimitPagination
 from .models import (
-    Recipe,
-    Tag,
     Favorite,
-    ShoppingCart,
     Ingredient,
-    IngredientInRecipe
+    IngredientInRecipe,
+    Recipe,
+    ShoppingCart,
+    Tag,
 )
-from .utils import RecipeFilter
 from .permissions import IsAuthorOrReadOnly
 from .serializers import (
-    RecipeSerializer,
-    TagSerializer,
     IngredientSerializer,
     RecipeMinifiedSerializer,
-    RecipeWriteSerializer
+    RecipeSerializer,
+    RecipeWriteSerializer,
+    TagSerializer,
 )
+from .utils import RecipeFilter
 
 
 class TagViewSet(ReadOnlyModelViewSet):
