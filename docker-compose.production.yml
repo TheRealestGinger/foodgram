@@ -12,8 +12,7 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
   backend:
-    #image: cleza/foodgram_backend
-    build: ./backend/
+    image: cleza/foodgram_backend
     env_file: .env
     volumes:
       - static:/backend_static
@@ -23,14 +22,12 @@ services:
       - db
   frontend:
     env_file: .env
-    #image: cleza/foodgram_frontend
-    build: ./frontend/
+    image: cleza/foodgram_frontend
     command: cp -r /app/build/. /frontend_static/
     volumes:
       - static:/frontend_static/
   gateway:
-    #image: cleza/foodgram_gateway
-    build: ./infra/
+    image: cleza/foodgram_gateway
     env_file: .env
     ports:
       - 8000:80
