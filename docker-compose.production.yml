@@ -13,6 +13,7 @@ services:
       - pg_data:/var/lib/postgresql/data
   backend:
     image: cleza/foodgram_backend
+    command: ["/wait-for-it.sh", "db:5432", "--", "gunicorn", "--bind", "0.0.0.0:8000", "foodgram.wsgi"]
     env_file: .env
     volumes:
       - static:/backend_static
