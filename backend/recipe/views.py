@@ -2,7 +2,7 @@ import hashlib
 
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, filters
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import (
     IsAuthenticated,
@@ -88,7 +88,9 @@ class RecipeViewSet(ModelViewSet):
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         if request.method == 'DELETE':
-            favorite = Favorite.objects.filter(user=user, recipe=recipe).first()
+            favorite = Favorite.objects.filter(
+                user=user, recipe=recipe
+            ).first()
             if not favorite:
                 return Response(
                     {'errors': 'Рецепт не в избранном.'},
@@ -119,7 +121,9 @@ class RecipeViewSet(ModelViewSet):
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         if request.method == 'DELETE':
-            cart = ShoppingCart.objects.filter(user=user, recipe=recipe).first()
+            cart = ShoppingCart.objects.filter(
+                user=user, recipe=recipe
+            ).first()
             if not cart:
                 return Response(
                     {'errors': 'Рецепта нет в корзине.'},
