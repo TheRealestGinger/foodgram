@@ -29,7 +29,7 @@ from .serializers import (
     RecipeWriteSerializer,
     TagSerializer,
 )
-from .utils import RecipeFilter
+from .utils import RecipeFilter, IngredientFilter
 
 
 class TagViewSet(ReadOnlyModelViewSet):
@@ -44,8 +44,8 @@ class TagViewSet(ReadOnlyModelViewSet):
 class IngredientViewSet(ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['^name']
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = IngredientFilter
     pagination_class = None
 
     def get_queryset(self):

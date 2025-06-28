@@ -13,8 +13,10 @@ DEBUG = os.getenv('DJANGO_DEBUG', 'True')
 ALLOWED_HOSTS = os.getenv('HOSTS', '').split(',')
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://cleza.hopto.org/',
+    'https://cleza.hopto.org',
 ]
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
