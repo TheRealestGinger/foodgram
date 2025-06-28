@@ -71,8 +71,6 @@ class Recipe(models.Model):
         related_name='recipes',
         verbose_name='Ингредиенты'
     )
-    is_favorited = models.BooleanField(default=False)
-    is_in_shopping_cart = models.BooleanField(default=False)
 
     published_at = models.DateTimeField(
         auto_now_add=True,
