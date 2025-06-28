@@ -152,6 +152,8 @@ class RecipeSerializer(ModelSerializer):
     )
     image = SerializerMethodField()
     author = SerializerMethodField()
+    is_favorited = SerializerMethodField()
+    is_in_shopping_cart = SerializerMethodField()
 
     class Meta:
         model = Recipe
