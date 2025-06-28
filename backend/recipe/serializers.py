@@ -175,6 +175,18 @@ class RecipeSerializer(ModelSerializer):
             return obj.image.url
         return ""
 
+    def get_is_favorited(self, obj):
+        user = self.context['request'].user
+        if user.is_anonymous:
+            return False
+        return obj.favorites.filter(user=user).exists()
+
+    def get_is_in_shopping_cart(self, obj):
+        user = self.context['request'].user
+        if user.is_anonymous:
+            return False
+        return obj.shopping_cart.filter(user=user).exists()
+
 
 class RecipeMinifiedSerializer(ModelSerializer):
     class Meta:
