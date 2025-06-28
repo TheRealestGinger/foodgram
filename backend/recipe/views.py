@@ -2,7 +2,7 @@ import hashlib
 
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status
+from rest_framework import status, filters
 from rest_framework.decorators import action
 from rest_framework.permissions import (
     IsAuthenticated,
@@ -44,9 +44,8 @@ class TagViewSet(ReadOnlyModelViewSet):
 class IngredientViewSet(ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    filterset_fields = {
-        'name': ['istartswith'],
-    }
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['^name']
     pagination_class = None
 
     def get_queryset(self):
