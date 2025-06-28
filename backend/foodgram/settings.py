@@ -12,6 +12,10 @@ DEBUG = os.getenv('DJANGO_DEBUG', 'True')
 
 ALLOWED_HOSTS = os.getenv('HOSTS', '').split(',')
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://cleza.hopto.org/',
+]
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
