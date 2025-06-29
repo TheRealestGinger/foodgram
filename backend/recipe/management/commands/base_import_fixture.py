@@ -26,7 +26,10 @@ class BaseImportFixtureCommand(BaseCommand):
                 objects.append(self.model(**fields))
             self.model.objects.bulk_create(objects, ignore_conflicts=True)
             self.stdout.write(self.style.SUCCESS(
-                f'Импортировано {len(objects)} объектов модели {self.model.__name__}'
+                (
+                    f'Импортировано {len(objects)} объектов модели '
+                    f'{self.model.__name__}'
+                )
             ))
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'Ошибка импорта: {e}'))
