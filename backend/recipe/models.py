@@ -1,7 +1,61 @@
 from django.core.validators import MinValueValidator
+from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.core.validators import RegexValidator
 
-from users.models import CustomUser as User
+
+COOKING_TIME_MIN_VALUE = 1
+INGREDIENT_AMOUNT_MIN_VALUE = 1
+
+
+class User(AbstractUser):
+    email = models.EmailField(
+        max_length=254,
+        unique=True,
+        blank=False,
+        null=False
+    )
+    avatar = models.ImageField(upload_to='users/', blank=True, null=True)
+    username = models.CharField(
+        max_length=150,
+        unique=True,
+        validators=[
+            RegexValidator(
+                regex=r'^[\w.@+-]+\Z',
+                message=(
+                    'Username may contain only letters, digits and '
+                    '@/./+/-/_ characters.'
+                )
+            )
+        ],
+        error_messages={
+            'unique': "A user with that username already exists.",
+        },
+    )
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+
+
+class Subscription(models.Model):
+    user = models.ForeignKey(
+        User,
+        related_name='subscriptions',
+        on_delete=models.CASCADE
+    )
+    author = models.ForeignKey(
+        User,
+        related_name='subscriptions_of_authors',
+        on_delete=models.CASCADE
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'author'],
+                name='unique_user_author'
+            )
+        ]
 
 
 class Tag(models.Model):
@@ -20,7 +74,7 @@ class Tag(models.Model):
 class Ingredient(models.Model):
     name = models.CharField(
         max_length=128,
-        verbose_name='Название ингредиента'
+        verbose_name='Название продукта'
     )
     measurement_unit = models.CharField(
         max_length=64,
@@ -29,8 +83,8 @@ class Ingredient(models.Model):
 
     class Meta:
         ordering = ('name',)
-        verbose_name = 'Ингредиент'
-        verbose_name_plural = 'Ингредиенты'
+        verbose_name = 'Продукт'
+        verbose_name_plural = 'Продукты'
         constraints = [
             models.UniqueConstraint(
                 fields=('name', 'measurement_unit'),
@@ -46,7 +100,6 @@ class Recipe(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='recipes',
         verbose_name='Автор'
     )
     name = models.CharField(max_length=256, verbose_name='Название рецепта')
@@ -56,19 +109,21 @@ class Recipe(models.Model):
         verbose_name='Время приготовления (минуты)',
         validators=[
             MinValueValidator(
-                1, message='Время приготовления должно быть больше 0'
+                COOKING_TIME_MIN_VALUE,
+                message=(
+                    f'Время приготовления должно быть больше '
+                    f'{COOKING_TIME_MIN_VALUE - 1}'
+                )
             )
         ]
     )
     tags = models.ManyToManyField(
         Tag,
-        related_name='recipes',
         verbose_name='Теги'
     )
     ingredients = models.ManyToManyField(
         Ingredient,
         through='IngredientInRecipe',
-        related_name='recipes',
         verbose_name='Ингредиенты'
     )
 
@@ -79,6 +134,7 @@ class Recipe(models.Model):
 
     class Meta:
         ordering = ('-published_at',)
+        default_related_name = 'recipes'
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
@@ -90,25 +146,29 @@ class IngredientInRecipe(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='recipe_ingredients'
     )
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        related_name='recipe_ingredients'
     )
     amount = models.PositiveIntegerField(
         verbose_name='Количество',
         validators=[
             MinValueValidator(
-                1, message='Количество ингредиента должно быть больше 0'
+                INGREDIENT_AMOUNT_MIN_VALUE,
+                message=(
+                    f'Количество продукта должно быть больше '
+                    f'{INGREDIENT_AMOUNT_MIN_VALUE - 1}'
+                )
             )
         ]
     )
 
     class Meta:
-        verbose_name = 'Ингредиент рецепта'
-        verbose_name_plural = 'Ингредиенты рецепта'
+        ordering = ('ingredient',)
+        default_related_name = 'recipe_ingredients'
+        verbose_name = 'Продукт рецепта'
+        verbose_name_plural = 'Продукты рецепта'
         constraints = [
             models.UniqueConstraint(
                 fields=('recipe', 'ingredient'),
@@ -120,45 +180,44 @@ class IngredientInRecipe(models.Model):
         return f'{self.ingredient.name} в {self.recipe.name}'
 
 
-class Favorite(models.Model):
+class UserRecipeRelation(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        verbose_name='Пользователь'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='favorites',
-        verbose_name='Рецепт'
     )
 
     class Meta:
-        unique_together = ('user', 'recipe')
+        abstract = True
+
+    def __str__(self):
+        return f'{self.user.username} - {self.recipe.name}'
+
+
+class Favorite(UserRecipeRelation):
+    class Meta(UserRecipeRelation.Meta):
         verbose_name = 'Избранный рецепт'
         verbose_name_plural = 'Избранные рецепты'
+        default_related_name = 'favorites'
+        constraints = [
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='unique_user_recipe_favorite'
+            )
+        ]
 
-    def __str__(self):
-        return f'{self.user.username} добавил в избранное {self.recipe.name}'
 
-
-class ShoppingCart(models.Model):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Пользователь'
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        related_name='shopping_cart',
-        verbose_name='Рецепт'
-    )
-
-    class Meta:
-        unique_together = ('user', 'recipe')
+class ShoppingCart(UserRecipeRelation):
+    class Meta(UserRecipeRelation.Meta):
         verbose_name = 'Рецепт в корзине'
         verbose_name_plural = 'Рецепты в корзине'
-
-    def __str__(self):
-        return f'{self.user.username} добавил {self.recipe.name} в корзину'
+        default_related_name = 'shopping_carts'
+        constraints = [
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='unique_user_recipe_shopping_cart'
+            )
+        ]

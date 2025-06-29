@@ -6,11 +6,11 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv()
-SECRET_KEY = os.getenv('SECRET_KEY')
+SECRET_KEY = os.getenv('SECRET_KEY', 'insecure-default-key')
 
-DEBUG = os.getenv('DJANGO_DEBUG', 'True')
+DEBUG = os.getenv('DJANGO_DEBUG', 'False')
 
-ALLOWED_HOSTS = os.getenv('HOSTS', '').split(',')
+ALLOWED_HOSTS = os.getenv('HOSTS', 'localhost,127.0.0.1').split(',')
 
 CSRF_TRUSTED_ORIGINS = [
     'https://cleza.hopto.org',
@@ -30,8 +30,8 @@ INSTALLED_APPS = [
     'djoser',
     'django_filters',
     'recipe.apps.RecipeConfig',
-    'users.apps.UsersConfig',
     'core.apps.CoreConfig',
+    'api.apps.ApiConfig',
 ]
 
 MIDDLEWARE = [
@@ -49,7 +49,7 @@ ROOT_URLCONF = 'foodgram.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -82,7 +82,7 @@ else:
         }
     }
 
-AUTH_USER_MODEL = 'users.CustomUser'
+AUTH_USER_MODEL = 'recipe.User'
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -99,7 +99,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ru-ru'
 
 TIME_ZONE = 'Europe/Moscow'
 
@@ -134,11 +134,7 @@ REST_FRAMEWORK = {
 }
 
 DJOSER = {
-    'SERIALIZERS': {
-        'user_create': 'users.serializers.UserSerializer',
-        'user': 'users.serializers.UserDetailSerializer',
-        'current_user': 'users.serializers.UserDetailSerializer',
-        'set_password': 'users.serializers.SetPasswordSerializer',
-        'avatar': 'users.serializers.UserAvatarSerializer',
-    },
+    'LOGIN_FIELD': 'email',
+    'USER_CREATE_PASSWORD_RETYPE': True,
+    'HIDE_USERS': False,
 }

@@ -1,0 +1,12 @@
+Список покупок на {{ date }}
+
+{% for ingredient in ingredients %}
+{{ ingredient.num }}. {{ ingredient.name }} ({{ ingredient.unit }}) — {{ ingredient.amount }}
+{% endfor %}
+
+{% if recipes %}
+Рецепты:
+{% for recipe in recipes %}
+- {{ recipe.name }} (автор: {{ recipe.author }})
+{% endfor %}
+{% endif %}

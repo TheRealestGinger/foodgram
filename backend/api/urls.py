@@ -2,20 +2,19 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from .views import (
-    SetPasswordView,
-    AvatarView,
-    UserViewSet
+    UserViewSet,
+    IngredientViewSet,
+    RecipeViewSet,
+    TagViewSet,
 )
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
+router.register(r'ingredients', IngredientViewSet)
+router.register(r'recipes', RecipeViewSet)
+router.register(r'tags', TagViewSet)
 
 urlpatterns = [
-    path(
-        'users/set_password/',
-        SetPasswordView.as_view(),
-        name='set_password'
-    ),
-    path('users/me/avatar/', AvatarView.as_view(), name='avatar'),
     path('auth/', include('djoser.urls.authtoken')),
+    path('r/<int:pk>/', include('recipe.urls')),
 ] + router.urls
