@@ -12,41 +12,49 @@ class User(AbstractUser):
     email = models.EmailField(
         max_length=254,
         unique=True,
-        blank=False,
-        null=False
+        verbose_name='Электронная почта'
     )
-    avatar = models.ImageField(upload_to='users/', blank=True, null=True)
+    avatar = models.ImageField(
+        upload_to='users/',
+        blank=True,
+        null=True,
+        verbose_name='Аватар'
+    )
     username = models.CharField(
         max_length=150,
         unique=True,
         validators=[
             RegexValidator(
                 regex=r'^[\w.@+-]+\Z',
-                message=(
-                    'Username may contain only letters, digits and '
-                    '@/./+/-/_ characters.'
-                )
             )
         ],
-        error_messages={
-            'unique': "A user with that username already exists.",
-        },
+        verbose_name='Имя пользователя'
     )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+
+    class Meta:
+        ordering = ('username',)
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+
+    def __str__(self):
+        return self.username
 
 
 class Subscription(models.Model):
     user = models.ForeignKey(
         User,
         related_name='subscriptions',
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        verbose_name='Пользователь'
     )
     author = models.ForeignKey(
         User,
         related_name='subscriptions_of_authors',
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        verbose_name='Автор'
     )
 
     class Meta:
@@ -56,11 +64,24 @@ class Subscription(models.Model):
                 name='unique_user_author'
             )
         ]
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
+
+    def __str__(self):
+        return f'{self.user.username} подписан на {self.author.username}'
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=32, unique=True)
-    slug = models.SlugField(max_length=32, unique=True)
+    name = models.CharField(
+        max_length=32,
+        unique=True,
+        verbose_name='Название тега'
+    )
+    slug = models.SlugField(
+        max_length=32,
+        unique=True,
+        verbose_name='Слаг'
+    )
 
     class Meta:
         ordering = ('name',)
@@ -74,7 +95,7 @@ class Tag(models.Model):
 class Ingredient(models.Model):
     name = models.CharField(
         max_length=128,
-        verbose_name='Название продукта'
+        verbose_name='Название',
     )
     measurement_unit = models.CharField(
         max_length=64,
@@ -110,10 +131,6 @@ class Recipe(models.Model):
         validators=[
             MinValueValidator(
                 COOKING_TIME_MIN_VALUE,
-                message=(
-                    f'Время приготовления должно быть больше '
-                    f'{COOKING_TIME_MIN_VALUE - 1}'
-                )
             )
         ]
     )
@@ -156,10 +173,6 @@ class IngredientInRecipe(models.Model):
         validators=[
             MinValueValidator(
                 INGREDIENT_AMOUNT_MIN_VALUE,
-                message=(
-                    f'Количество продукта должно быть больше '
-                    f'{INGREDIENT_AMOUNT_MIN_VALUE - 1}'
-                )
             )
         ]
     )
@@ -192,6 +205,13 @@ class UserRecipeRelation(models.Model):
 
     class Meta:
         abstract = True
+        default_related_name = 'user_recipe_relations'
+        constraints = [
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='unique_user_recipe_relation'
+            )
+        ]
 
     def __str__(self):
         return f'{self.user.username} - {self.recipe.name}'
@@ -201,23 +221,9 @@ class Favorite(UserRecipeRelation):
     class Meta(UserRecipeRelation.Meta):
         verbose_name = 'Избранный рецепт'
         verbose_name_plural = 'Избранные рецепты'
-        default_related_name = 'favorites'
-        constraints = [
-            models.UniqueConstraint(
-                fields=('user', 'recipe'),
-                name='unique_user_recipe_favorite'
-            )
-        ]
 
 
 class ShoppingCart(UserRecipeRelation):
     class Meta(UserRecipeRelation.Meta):
         verbose_name = 'Рецепт в корзине'
         verbose_name_plural = 'Рецепты в корзине'
-        default_related_name = 'shopping_carts'
-        constraints = [
-            models.UniqueConstraint(
-                fields=('user', 'recipe'),
-                name='unique_user_recipe_shopping_cart'
-            )
-        ]

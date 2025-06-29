@@ -1,5 +1,12 @@
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
+from .models import Recipe
 
 
-def short_link_redirect(request, pk):
-    return redirect(f'/recipes/{pk}/')
+class ShortLinkRedirectView(APIView):
+    def get(self, request, short_hash):
+        pk = int(short_hash, 36)
+        recipe = get_object_or_404(Recipe, pk=pk)
+        return Response({'id': recipe.pk, 'name': recipe.name})

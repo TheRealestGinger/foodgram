@@ -11,7 +11,67 @@ from .models import (
     Tag,
     User,
 )
-from api.utils import CookingTimeListFilter
+
+
+class CookingTimeListFilter(admin.SimpleListFilter):
+    title = 'Время приготовления'
+    parameter_name = 'cooking_time'
+
+    def lookups(self, request, model_admin):
+        qs = model_admin.get_queryset(request)
+        times = list(qs.values_list('cooking_time', flat=True))
+        if len(set(times)) < 3:
+            return []
+        times_sorted = sorted(times)
+        times_count = len(times_sorted)
+        first_threshold_index = times_count // 3
+        second_threshold_index = 2 * times_count // 3
+        first_threshold = times_sorted[first_threshold_index]
+        second_threshold = (
+            times_sorted[second_threshold_index]
+            if times_count > 0 else 0
+        )
+
+        fast_recipes_count = sum(
+            cooking_time <= first_threshold for cooking_time in times
+        )
+        medium_recipes_count = sum(
+            first_threshold < cooking_time <= second_threshold
+            for cooking_time in times
+        )
+        slow_recipes_count = sum(
+            cooking_time > second_threshold for cooking_time in times
+        )
+
+        return [
+            (
+                'fast',
+                f'быстрее {first_threshold} мин ({fast_recipes_count})'
+            ),
+            (
+                'medium',
+                f'быстрее {second_threshold} мин ({medium_recipes_count})'
+            ),
+            (
+                'slow',
+                f'долго ({slow_recipes_count})'
+            ),
+        ]
+
+    def queryset(self, request, recipes):
+        first_threshold = getattr(self, 'first_threshold', 0)
+        second_threshold = getattr(self, 'second_threshold', 0)
+
+        if self.value() == 'fast':
+            return recipes.filter(cooking_time__lte=first_threshold)
+        if self.value() == 'medium':
+            return recipes.filter(
+                cooking_time__gt=first_threshold,
+                cooking_time__lte=second_threshold
+            )
+        if self.value() == 'slow':
+            return recipes.filter(cooking_time__gt=second_threshold)
+        return recipes
 
 
 @admin.register(Recipe)
@@ -34,8 +94,10 @@ class RecipeAdmin(admin.ModelAdmin):
         ingredients = (
             recipe.ingredientsinrecipe_set.select_related('ingredient')
         )
-        items = [f"{i.ingredient.name} ({i.amount})" for i in ingredients]
-        return '<br>'.join(items)
+        return '<br>'.join(
+            f"{i.ingredient.name} ({i.amount} {i.ingredient.measurement_unit})"
+            for i in ingredients
+        )
 
     @admin.display(description='Картинка')
     @mark_safe
@@ -58,7 +120,7 @@ class IngredientAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'measurement_unit', 'recipes_count')
     list_filter = ('measurement_unit',)
 
-    @admin.display(description='Число рецептов')
+    @admin.display(description='Рецептов')
     def recipes_count(self, ingredient):
         return ingredient.recipes.count()
 
@@ -67,11 +129,14 @@ class IngredientAdmin(admin.ModelAdmin):
 class TagAdmin(admin.ModelAdmin):
     search_fields = ('name', 'slug')
     list_display = (
-        [field.name for field in Tag._meta.fields]
-        + ['recipes_count']
+        'id',
+        'name',
+        'color',
+        'slug',
+        'recipes_count',
     )
 
-    @admin.display(description='Число рецептов')
+    @admin.display(description='Рецептов')
     def recipes_count(self, tag):
         return tag.recipes.count()
 
@@ -114,6 +179,7 @@ class UserAdmin(BaseUserAdmin):
     def full_name(self, user):
         return f"{user.first_name} {user.last_name}"
 
+    @admin.display(description='Аватар')
     @mark_safe
     def avatar_tag(self, user):
         if user.avatar:
@@ -122,7 +188,6 @@ class UserAdmin(BaseUserAdmin):
                 'style="object-fit:cover;border-radius:50%;">'
             )
         return '-'
-    avatar_tag.short_description = 'Аватар'
 
     @admin.display(description='Рецептов')
     def recipes_count(self, user):

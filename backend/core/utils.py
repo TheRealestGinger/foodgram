@@ -1,13 +1,7 @@
 import base64
 
 from django.core.files.base import ContentFile
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.serializers import ImageField
-
-
-class LimitPagination(PageNumberPagination):
-    page_size = 6
-    page_size_query_param = 'limit'
 
 
 class Base64ImageField(ImageField):

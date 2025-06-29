@@ -1,5 +1,4 @@
 from djoser.serializers import (
-    UserCreateSerializer,
     UserSerializer as DjoserUserSerializer
 )
 from rest_framework.exceptions import ValidationError
@@ -13,16 +12,7 @@ from rest_framework.serializers import (
 
 from core.utils import Base64ImageField
 from recipe.models import Ingredient, IngredientInRecipe, Recipe, Tag, User
-from .utils import create_ingredients, check_duplicates, is_related
-
-
-class UserSerializer(UserCreateSerializer):
-    class Meta(UserCreateSerializer.Meta):
-        model = User
-        fields = (
-            'id', 'email', 'username', 'first_name',
-            'last_name', 'password'
-        )
+from .utils import check_duplicates, is_related
 
 
 class UserDetailSerializer(DjoserUserSerializer):
@@ -102,24 +92,15 @@ class IngredientInRecipeReadSerializer(ModelSerializer):
 
 
 class IngredientInRecipeWriteSerializer(ModelSerializer):
-    id = IntegerField()
-    amount = IntegerField()
+    id = PrimaryKeyRelatedField(
+        queryset=Ingredient.objects.all(),
+        source='ingredient'
+    )
+    amount = IntegerField(min_value=1)
 
     class Meta:
         model = IngredientInRecipe
         fields = ('id', 'amount')
-
-    def validate_id(self, value):
-        if not Ingredient.objects.filter(id=value).exists():
-            raise ValidationError('Ингредиент с таким id не существует.')
-        return value
-
-    def validate_amount(self, value):
-        if value < 1:
-            raise ValidationError(
-                'Количество ингредиента должно быть больше 0.'
-            )
-        return value
 
 
 class RecipeWriteSerializer(ModelSerializer):
@@ -140,12 +121,22 @@ class RecipeWriteSerializer(ModelSerializer):
             'cooking_time': {'min_value': 1}
         }
 
+    def create_ingredients(recipe, ingredients_data):
+        IngredientInRecipe.objects.bulk_create(
+            IngredientInRecipe(
+                recipe=recipe,
+                ingredient_id=ingredient['id'],
+                amount=ingredient['amount']
+            )
+            for ingredient in ingredients_data
+        )
+
     def create(self, validated_data):
         tags = validated_data.pop('tags')
         ingredients_data = validated_data.pop('ingredients')
         recipe = super().create({**validated_data})
         recipe.tags.set(tags)
-        create_ingredients(recipe, ingredients_data)
+        self.create_ingredients(recipe, ingredients_data)
         return recipe
 
     def update(self, instance, validated_data):
@@ -154,7 +145,7 @@ class RecipeWriteSerializer(ModelSerializer):
         instance = super().update(instance, validated_data)
         instance.tags.set(tags)
         instance.recipe_ingredients.all().delete()
-        create_ingredients(instance, ingredients_data)
+        self.create_ingredients(instance, ingredients_data)
         return super().update(instance, validated_data)
 
     def to_representation(self, instance):

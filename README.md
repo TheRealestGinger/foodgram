@@ -73,8 +73,9 @@ docker compose -f docker-compose.production.yml exec backend python manage.py co
 ### 6. Импортируйте ингредиенты (один раз)
 
 ```sh
-docker compose -f docker-compose.production.yml exec backend python manage.py loaddata /app/data/ingredients.json
+docker compose -f docker-compose.production.yml exec backend python manage.py import_ingredients /app/data/ingredients.json
 ```
+
 
 ### 7. (Опционально) Создайте суперпользователя
 
