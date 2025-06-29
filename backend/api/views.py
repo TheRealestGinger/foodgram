@@ -132,7 +132,9 @@ class UserViewSet(DjoserUserViewSet):
         permission_classes=[IsAuthenticated]
     )
     def subscriptions(self, request):
-        subscriptions = Subscription.objects.filter(user=request.user).order_by('id')
+        subscriptions = Subscription.objects.filter(
+            user=request.user
+        ).order_by('id')
         authors = [sub.author for sub in subscriptions]
         page = self.paginate_queryset(authors)
         serializer = AuthorWithRecipesSerializer(
