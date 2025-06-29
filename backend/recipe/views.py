@@ -1,12 +1,14 @@
-from django.shortcuts import get_object_or_404
-from rest_framework.views import APIView
+from django.shortcuts import redirect
 from rest_framework.response import Response
 
 from .models import Recipe
 
 
-class ShortLinkRedirectView(APIView):
-    def get(self, request, short_hash):
-        pk = int(short_hash, 36)
-        recipe = get_object_or_404(Recipe, pk=pk)
-        return Response({'id': recipe.pk, 'name': recipe.name})
+def short_link_redirect(request, recipe_id):
+    exists = Recipe.objects.filter(pk=recipe_id).exists()
+    if not exists:
+        return Response(
+            {'detail': f'Рецепт с id {recipe_id} не найден.'},
+            status=404
+        )
+    return redirect(f'/recipes/{recipe_id}/')

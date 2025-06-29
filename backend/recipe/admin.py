@@ -24,33 +24,28 @@ class CookingTimeListFilter(admin.SimpleListFilter):
             return []
         times_sorted = sorted(times)
         times_count = len(times_sorted)
-        first_threshold_index = times_count // 3
-        second_threshold_index = 2 * times_count // 3
-        first_threshold = times_sorted[first_threshold_index]
-        second_threshold = (
-            times_sorted[second_threshold_index]
-            if times_count > 0 else 0
-        )
+        self.first_threshold = times_sorted[times_count // 3]
+        self.second_threshold = times_sorted[2 * times_count // 3]
 
         fast_recipes_count = sum(
-            cooking_time <= first_threshold for cooking_time in times
+            cooking_time <= self.first_threshold for cooking_time in times
         )
         medium_recipes_count = sum(
-            first_threshold < cooking_time <= second_threshold
+            self.first_threshold < cooking_time <= self.second_threshold
             for cooking_time in times
         )
         slow_recipes_count = sum(
-            cooking_time > second_threshold for cooking_time in times
+            cooking_time > self.second_threshold for cooking_time in times
         )
 
         return [
             (
                 'fast',
-                f'быстрее {first_threshold} мин ({fast_recipes_count})'
+                f'быстрее {self.first_threshold} мин ({fast_recipes_count})'
             ),
             (
                 'medium',
-                f'быстрее {second_threshold} мин ({medium_recipes_count})'
+                f'быстрее {self.second_threshold} мин ({medium_recipes_count})'
             ),
             (
                 'slow',
@@ -59,18 +54,15 @@ class CookingTimeListFilter(admin.SimpleListFilter):
         ]
 
     def queryset(self, request, recipes):
-        first_threshold = getattr(self, 'first_threshold', 0)
-        second_threshold = getattr(self, 'second_threshold', 0)
-
         if self.value() == 'fast':
-            return recipes.filter(cooking_time__lte=first_threshold)
+            return recipes.filter(cooking_time__lte=self.first_threshold)
         if self.value() == 'medium':
             return recipes.filter(
-                cooking_time__gt=first_threshold,
-                cooking_time__lte=second_threshold
+                cooking_time__gt=self.first_threshold,
+                cooking_time__lte=self.second_threshold
             )
         if self.value() == 'slow':
-            return recipes.filter(cooking_time__gt=second_threshold)
+            return recipes.filter(cooking_time__gt=self.second_threshold)
         return recipes
 
 
@@ -91,12 +83,12 @@ class RecipeAdmin(admin.ModelAdmin):
     @admin.display(description='Продукты')
     @mark_safe
     def ingredients_list(self, recipe):
-        ingredients = (
-            recipe.ingredientsinrecipe_set.select_related('ingredient')
-        )
+
         return '<br>'.join(
             f"{i.ingredient.name} ({i.amount} {i.ingredient.measurement_unit})"
-            for i in ingredients
+            for i in recipe.ingredientsinrecipe_set.select_related(
+                'ingredient'
+            )
         )
 
     @admin.display(description='Картинка')

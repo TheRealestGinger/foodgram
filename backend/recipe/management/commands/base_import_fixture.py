@@ -19,18 +19,13 @@ class BaseImportFixtureCommand(BaseCommand):
         json_path = options['json_path']
         try:
             with open(json_path, encoding='utf-8') as f:
-                data = json.load(f)
-            objects = []
-            objects = [self.model(**obj) for obj in data]
-            created_objects = self.model.objects.bulk_create(
-                objects,
-                ignore_conflicts=True
-            )
-            self.stdout.write(self.style.SUCCESS(
-                (
-                    f'Импортировано {len(created_objects)} объектов модели '
-                    f'{self.model.__name__}'
+                created_objects = self.model.objects.bulk_create(
+                    [self.model(**obj) for obj in json.load(f)],
+                    ignore_conflicts=True
                 )
+            self.stdout.write(self.style.SUCCESS(
+                f'Импортировано {len(created_objects)} объектов модели '
+                f'{self.model.__name__}'
             ))
         except Exception as e:
             self.stdout.write(self.style.ERROR(

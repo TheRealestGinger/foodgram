@@ -3,6 +3,7 @@ from djoser.views import UserViewSet as DjoserUserViewSet
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
@@ -65,35 +66,35 @@ class UserViewSet(DjoserUserViewSet):
         author = self.get_object()
         user = request.user
 
-        if request.method == 'POST':
-            if author == user:
-                raise ValidationError(
-                    {'errors': 'Нельзя подписаться на самого себя.'}
-                )
-            subscription, created = Subscription.objects.get_or_create(
+        if request.method != 'POST':
+            get_object_or_404(
+                Subscription,
                 user=user,
                 author=author
-            )
-            if not created:
-                raise ValidationError(
-                    {
-                        'errors': (
-                            f'Вы уже подписаны на автора: '
-                            f'{author.username}.'
-                        )
-                    }
-                )
-            return Response(AuthorWithRecipesSerializer(
-                subscription.author,
-                context={'request': request}
-            ).data, status=status.HTTP_201_CREATED)
+            ).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
-        get_object_or_404(
-            Subscription,
+        if author == user:
+            raise ValidationError(
+                {'errors': 'Нельзя подписаться на самого себя.'}
+            )
+        subscription, created = Subscription.objects.get_or_create(
             user=user,
             author=author
-        ).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        )
+        if not created:
+            raise ValidationError(
+                {
+                    'errors': (
+                        f'Вы уже подписаны на автора: '
+                        f'{author.username}.'
+                    )
+                }
+            )
+        return Response(AuthorWithRecipesSerializer(
+            subscription.author,
+            context={'request': request}
+        ).data, status=status.HTTP_201_CREATED)
 
     @action(
         detail=False,
@@ -102,9 +103,7 @@ class UserViewSet(DjoserUserViewSet):
         permission_classes=[IsAuthenticated]
     )
     def subscriptions(self, request):
-        subscriptions = Subscription.objects.filter(
-            user=request.user
-        ).order_by('id')
+        subscriptions = request.user.subscriptions.all()
         authors = [sub.author for sub in subscriptions]
         page = self.paginate_queryset(authors)
         serializer = AuthorWithRecipesSerializer(
@@ -163,14 +162,6 @@ class RecipeViewSet(ModelViewSet):
     pagination_class = LimitPagination
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
 
-    def to_base36(num):
-        chars = '0123456789abcdefghijklmnopqrstuvwxyz'
-        res = ''
-        while num > 0:
-            num, i = divmod(num, 36)
-            res = chars[i] + res
-        return res or '0'
-
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
             return RecipeWriteSerializer
@@ -181,12 +172,20 @@ class RecipeViewSet(ModelViewSet):
 
     def _handle_add_remove(self, request, pk, model):
         user = request.user
-        recipe = self.get_object()
-        obj, created = model.objects.get_or_create(user=user, recipe=recipe)
         if request.method == 'POST':
+            recipe = self.get_object()
+            obj, created = model.objects.get_or_create(
+                user=user,
+                recipe=recipe
+            )
             if not created:
                 return Response(
-                    {'errors': f'Рецепт "{recipe.name}" уже добавлен.'},
+                    {
+                        'errors': (
+                            f'Рецепт "{recipe.name}" уже добавлен в '
+                            f'{model.__name__}.'
+                        )
+                    },
                     status=status.HTTP_400_BAD_REQUEST
                 )
             serializer = RecipeMinifiedSerializer(
@@ -194,12 +193,7 @@ class RecipeViewSet(ModelViewSet):
                 context={'request': request}
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        if not obj:
-            return Response(
-                {'errors': 'Рецепта нет в списке.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        get_object_or_404(model, user=user, recipe=recipe).delete()
+        get_object_or_404(model, user=user, recipe__pk=pk).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
@@ -289,10 +283,10 @@ class RecipeViewSet(ModelViewSet):
     def short_link(self, request, pk=None):
         exists = Recipe.objects.filter(pk=pk).exists()
         if not exists:
-            return Response(
-                {'detail': 'Not found.'},
-                status=status.HTTP_404_NOT_FOUND
+            raise ValidationError(
+                {'detail': f'Рецепт с id={pk} не найден.'}
             )
-        short_hash = self.to_base36(int(pk))
-        short_link = request.build_absolute_uri(f'/s/{short_hash}/')
+        short_link = request.build_absolute_uri(
+            reverse('short-recipe', kwargs={'pk': pk})
+        )
         return Response({'short-link': short_link})

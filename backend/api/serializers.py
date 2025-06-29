@@ -15,6 +15,10 @@ from recipe.models import Ingredient, IngredientInRecipe, Recipe, Tag, User
 from .utils import check_duplicates, is_related
 
 
+COOKING_TIME_MIN_VALUE = 1
+INGREDIENT_AMOUNT_MIN_VALUE = 1
+
+
 class UserDetailSerializer(DjoserUserSerializer):
     is_subscribed = SerializerMethodField()
 
@@ -96,7 +100,7 @@ class IngredientInRecipeWriteSerializer(ModelSerializer):
         queryset=Ingredient.objects.all(),
         source='ingredient'
     )
-    amount = IntegerField(min_value=1)
+    amount = IntegerField(min_value=INGREDIENT_AMOUNT_MIN_VALUE)
 
     class Meta:
         model = IngredientInRecipe
@@ -118,7 +122,7 @@ class RecipeWriteSerializer(ModelSerializer):
             'tags', 'ingredients'
         )
         extra_kwargs = {
-            'cooking_time': {'min_value': 1}
+            'cooking_time': {'min_value': COOKING_TIME_MIN_VALUE}
         }
 
     def create_ingredients(recipe, ingredients_data):
@@ -134,7 +138,7 @@ class RecipeWriteSerializer(ModelSerializer):
     def create(self, validated_data):
         tags = validated_data.pop('tags')
         ingredients_data = validated_data.pop('ingredients')
-        recipe = super().create({**validated_data})
+        recipe = super().create(validated_data)
         recipe.tags.set(tags)
         self.create_ingredients(recipe, ingredients_data)
         return recipe

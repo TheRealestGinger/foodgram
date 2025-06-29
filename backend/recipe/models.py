@@ -28,11 +28,19 @@ class User(AbstractUser):
                 regex=r'^[\w.@+-]+\Z',
             )
         ],
-        verbose_name='Имя пользователя'
+        verbose_name='Никнейм'
+    )
+    first_name = models.CharField(
+        max_length=150,
+        verbose_name='Имя'
+    )
+    last_name = models.CharField(
+        max_length=150,
+        verbose_name='Фамилия'
     )
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name', 'password']
 
     class Meta:
         ordering = ('username',)
@@ -205,11 +213,11 @@ class UserRecipeRelation(models.Model):
 
     class Meta:
         abstract = True
-        default_related_name = 'user_recipe_relations'
+        default_related_name = '%(class)ss'
         constraints = [
             models.UniqueConstraint(
                 fields=('user', 'recipe'),
-                name='unique_user_recipe_relation'
+                name='unique_user_recipe_%(class)ss'
             )
         ]
 
