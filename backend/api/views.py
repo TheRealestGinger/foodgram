@@ -74,7 +74,9 @@ class UserViewSet(DjoserUserViewSet):
             context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
-        self.request.user.set_password(serializer.validated_data['new_password'])
+        self.request.user.set_password(
+            serializer.validated_data['new_password']
+        )
         self.request.user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -111,7 +113,10 @@ class UserViewSet(DjoserUserViewSet):
                 context={'request': request}
             ).data, status=status.HTTP_201_CREATED)
 
-        subscription = Subscription.objects.filter(user=user, author=author).first()
+        subscription = Subscription.objects.filter(
+            user=user,
+            author=author
+        ).first()
         if not subscription:
             return Response(
                 {'errors': 'Подписка не найдена.'},
