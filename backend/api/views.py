@@ -295,5 +295,5 @@ class RecipeViewSet(ModelViewSet):
                 {'detail': f'Рецепт с id={pk} не найден.'}
             )
         return Response({'short-link': request.build_absolute_uri(
-            reverse('recipe-short-link', args=[pk])
+            reverse('recipe:recipe-short-link', args=[pk])
         )})

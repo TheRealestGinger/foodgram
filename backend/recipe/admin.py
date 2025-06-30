@@ -86,6 +86,12 @@ class InRecipeListFilter(admin.SimpleListFilter):
         return queryset
 
 
+class IngredientInRecipeInline(admin.TabularInline):
+    model = IngredientInRecipe
+    extra = 1
+    autocomplete_fields = ['ingredient']
+
+
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     search_fields = ('name', 'author__username', 'tags__name')
@@ -99,6 +105,7 @@ class RecipeAdmin(admin.ModelAdmin):
         'ingredients_list',
         'image_tag',
     )
+    inlines = (IngredientInRecipeInline,)
 
     @admin.display(description='Продукты')
     @mark_safe
