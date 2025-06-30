@@ -261,7 +261,7 @@ class RecipeViewSet(ModelViewSet):
                         'author': str(recipe.author)
                     }
                     for recipe in Recipe.objects.filter(
-                        shopping_carts__user=user
+                        shoppingcarts__user=user
                     )
                 ]
             }
@@ -286,5 +286,5 @@ class RecipeViewSet(ModelViewSet):
                 {'detail': f'Рецепт с id={pk} не найден.'}
             )
         return Response({'short-link': request.build_absolute_uri(
-            reverse('short-recipe', args=[pk])
+            reverse('recipe-short-link', args=[pk])
         )})
