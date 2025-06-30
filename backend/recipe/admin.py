@@ -106,7 +106,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
         return '<br>'.join(
             f"{i.ingredient.name} ({i.amount} {i.ingredient.measurement_unit})"
-            for i in recipe.ingredientsinrecipe_set.select_related(
+            for i in recipe.recipe_ingredients.select_related(
                 'ingredient'
             )
         )

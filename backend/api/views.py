@@ -1,3 +1,5 @@
+import io
+
 from djoser.serializers import UserCreateSerializer
 from djoser.views import UserViewSet as DjoserUserViewSet
 from django.http import FileResponse
@@ -240,10 +242,16 @@ class RecipeViewSet(ModelViewSet):
         lines = []
         for (name, unit), amount in ingredients.items():
             lines.append(f'{name} ({unit}) — {amount}')
+        months = [
+            '', 'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+            'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+        ]
+        now = timezone.now()
+        date_str = f"{now.day:02d} {months[now.month]} {now.year}"
         content = render_to_string(
             'shopping_cart.txt',
             {
-                'date': timezone.now().strftime('%d.%m.%Y'),
+                'date': date_str,
                 'ingredients': [
                     {
                         'num': i,
@@ -267,8 +275,9 @@ class RecipeViewSet(ModelViewSet):
             }
         )
 
+        file_stream = io.BytesIO(content.encode('utf-8'))
         return FileResponse(
-            content,
+            file_stream,
             as_attachment=True,
             filename='shopping_cart.txt'
         )
