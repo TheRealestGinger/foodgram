@@ -82,4 +82,4 @@ class RecipeFilter(django_filters.FilterSet):
             return recipes
         if not user.is_authenticated:
             return recipes.none()
-        return recipes.filter(shopping_carts__user=user)
+        return recipes.filter(shoppingcarts__user=user)

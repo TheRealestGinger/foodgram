@@ -228,7 +228,7 @@ class RecipeViewSet(ModelViewSet):
     def download_shopping_cart(self, request):
         user = request.user
         ingredient_links = IngredientInRecipe.objects.filter(
-            recipe__shopping_carts__user=user
+            recipe__shoppingcarts__user=user
         ).select_related('ingredient')
 
         ingredients = {}

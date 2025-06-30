@@ -1,3 +1,4 @@
+from django.contrib.auth.models import Group
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.safestring import mark_safe
@@ -10,6 +11,7 @@ from .models import (
     ShoppingCart,
     Tag,
     User,
+    Subscription,
 )
 
 
@@ -66,6 +68,24 @@ class CookingTimeListFilter(admin.SimpleListFilter):
         return recipes
 
 
+class InRecipeListFilter(admin.SimpleListFilter):
+    title = 'Есть в рецептах'
+    parameter_name = 'in_recipes'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('yes', 'Да'),
+            ('no', 'Нет'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'yes':
+            return queryset.filter(recipes__isnull=False).distinct()
+        if self.value() == 'no':
+            return queryset.filter(recipes__isnull=True)
+        return queryset
+
+
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     search_fields = ('name', 'author__username', 'tags__name')
@@ -110,7 +130,7 @@ class RecipeAdmin(admin.ModelAdmin):
 class IngredientAdmin(admin.ModelAdmin):
     search_fields = ('name', 'measurement_unit')
     list_display = ('id', 'name', 'measurement_unit', 'recipes_count')
-    list_filter = ('measurement_unit',)
+    list_filter = ('measurement_unit', InRecipeListFilter)
 
     @admin.display(description='Рецептов')
     def recipes_count(self, ingredient):
@@ -150,7 +170,7 @@ class ShoppingCartAdmin(admin.ModelAdmin):
 class IngredientInRecipeAdmin(admin.ModelAdmin):
     list_display = ('id', 'recipe', 'ingredient', 'amount')
     search_fields = ('recipe__name', 'ingredient__name')
-    list_filter = ('recipe', 'ingredient')
+    list_filter = ('recipe',)
 
 
 @admin.register(User)
@@ -158,7 +178,8 @@ class UserAdmin(BaseUserAdmin):
     search_fields = ('username', 'email')
     list_display = (
         'id', 'username', 'full_name', 'email', 'avatar_tag',
-        'recipes_count', 'subscriptions_count', 'subscribers_count',
+        'recipes_count', 'subscriptions_count',
+        'subscriptions_of_authors_count',
     )
     readonly_fields = ('avatar_tag',)
     list_filter = ('is_staff', 'is_superuser', 'is_active')
@@ -189,5 +210,15 @@ class UserAdmin(BaseUserAdmin):
         return user.subscriptions.count()
 
     @admin.display(description='Подписчиков')
-    def subscribers_count(self, user):
-        return user.subscribers.count()
+    def subscriptions_of_authors_count(self, user):
+        return user.subscriptions_of_authors.count()
+
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'author')
+    search_fields = ('user__username', 'author__username')
+    list_filter = ('user', 'author')
+
+
+admin.site.unregister(Group)
