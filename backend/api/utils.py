@@ -70,7 +70,7 @@ class RecipeFilter(django_filters.FilterSet):
 
     def filter_is_favorited(self, recipes, name, value):
         user = self.request.user
-        if not value:
+        if str(value).lower() in ['0', 'false', 'off', 'no', '']:
             return recipes
         if not user.is_authenticated:
             return recipes.none()
@@ -78,7 +78,7 @@ class RecipeFilter(django_filters.FilterSet):
 
     def filter_is_in_shopping_cart(self, recipes, name, value):
         user = self.request.user
-        if not value:
+        if str(value).lower() in ['0', 'false', 'off', 'no', '']:
             return recipes
         if not user.is_authenticated:
             return recipes.none()
