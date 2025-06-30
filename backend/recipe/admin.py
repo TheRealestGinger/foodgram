@@ -123,7 +123,6 @@ class TagAdmin(admin.ModelAdmin):
     list_display = (
         'id',
         'name',
-        'color',
         'slug',
         'recipes_count',
     )

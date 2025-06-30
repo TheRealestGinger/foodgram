@@ -11,12 +11,16 @@ from rest_framework.serializers import (
 )
 
 from core.utils import Base64ImageField
-from recipe.models import Ingredient, IngredientInRecipe, Recipe, Tag, User
+from recipe.models import (
+    Ingredient,
+    IngredientInRecipe,
+    Recipe,
+    Tag,
+    User,
+    COOKING_TIME_MIN_VALUE,
+    INGREDIENT_AMOUNT_MIN_VALUE
+)
 from .utils import check_duplicates, is_related
-
-
-COOKING_TIME_MIN_VALUE = 1
-INGREDIENT_AMOUNT_MIN_VALUE = 1
 
 
 class UserDetailSerializer(DjoserUserSerializer):
@@ -125,11 +129,11 @@ class RecipeWriteSerializer(ModelSerializer):
             'cooking_time': {'min_value': COOKING_TIME_MIN_VALUE}
         }
 
-    def create_ingredients(recipe, ingredients_data):
+    def create_ingredients(self, recipe, ingredients_data):
         IngredientInRecipe.objects.bulk_create(
             IngredientInRecipe(
                 recipe=recipe,
-                ingredient_id=ingredient['id'],
+                ingredient_id=ingredient['ingredient'].id,
                 amount=ingredient['amount']
             )
             for ingredient in ingredients_data
@@ -196,7 +200,7 @@ class RecipeSerializer(ModelSerializer):
         return is_related(self, obj, 'favorites')
 
     def get_is_in_shopping_cart(self, obj):
-        return is_related(self, obj, 'shopping_carts')
+        return is_related(self, obj, 'shoppingcarts')
 
 
 class RecipeMinifiedSerializer(ModelSerializer):

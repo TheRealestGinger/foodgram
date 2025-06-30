@@ -172,29 +172,28 @@ class RecipeViewSet(ModelViewSet):
 
     def _handle_add_remove(self, request, pk, model):
         user = request.user
-        if request.method == 'POST':
-            recipe = self.get_object()
-            obj, created = model.objects.get_or_create(
-                user=user,
-                recipe=recipe
+        if request.method != 'POST':
+            get_object_or_404(model, user=user, recipe__pk=pk).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        recipe = self.get_object()
+        obj, created = model.objects.get_or_create(
+            user=user,
+            recipe=recipe
+        )
+        if not created:
+            raise ValidationError(
+                {
+                    'errors': (
+                        f'Рецепт "{recipe.name}" уже добавлен в '
+                        f'{model.__name__}.'
+                    )
+                }
             )
-            if not created:
-                return Response(
-                    {
-                        'errors': (
-                            f'Рецепт "{recipe.name}" уже добавлен в '
-                            f'{model.__name__}.'
-                        )
-                    },
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            serializer = RecipeMinifiedSerializer(
-                recipe,
-                context={'request': request}
-            )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        get_object_or_404(model, user=user, recipe__pk=pk).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(RecipeMinifiedSerializer(
+            recipe,
+            context={'request': request}
+        ).data, status=status.HTTP_201_CREATED)
 
     @action(
         detail=True,
@@ -286,7 +285,6 @@ class RecipeViewSet(ModelViewSet):
             raise ValidationError(
                 {'detail': f'Рецепт с id={pk} не найден.'}
             )
-        short_link = request.build_absolute_uri(
-            reverse('short-recipe', kwargs={'pk': pk})
-        )
-        return Response({'short-link': short_link})
+        return Response({'short-link': request.build_absolute_uri(
+            reverse('short-recipe', args=[pk])
+        )})

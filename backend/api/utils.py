@@ -8,7 +8,13 @@ from recipe.models import Recipe, Ingredient
 
 
 def check_duplicates(items, field_name):
-    ids = [item['id'] if isinstance(item, dict) else item.id for item in items]
+    def get_id(item):
+        if isinstance(item, dict):
+            return item.get('id') or item.get('ingredient')
+        if hasattr(item, 'id'):
+            return item.id
+        return item
+    ids = [get_id(item) for item in items]
     if len(ids) == len(set(ids)):
         return
     duplicates = [
